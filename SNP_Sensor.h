@@ -13,7 +13,7 @@ class SNP_Sensor
 public:
     SNP_Sensor(uint8_t rxPin, uint8_t txPin, uint8_t dePin = NO_DE_PIN);
     void begin(void);
-    uint32_t readLight(void);
+    float readLight(void);
     float readTemperature(void);
     float readHumidity(void);
     void readTemperatureAndHumidity(float &temperature, float &humidity);
