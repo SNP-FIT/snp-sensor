@@ -18,7 +18,7 @@ void SNP_Sensor::begin(void)
     digitalWrite(_dePin, LOW);
   }
 
-#if defined(__AVR__) || defined(__ESP8266__)
+#if defined(__AVR__) || defined(ESP8266)
   _softwareSerial = new SoftwareSerial(_rxPin, _txPin);
   _serial = _softwareSerial;
   _softwareSerial->begin(9600);
