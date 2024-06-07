@@ -18,7 +18,7 @@ void SNP_Sensor::begin(void)
     digitalWrite(_dePin, LOW);
   }
 
-#if defined(__AVR__) || defined(__ESP8266__)
+#if defined(__AVR__) || defined(ESP8266)
   _softwareSerial = new SoftwareSerial(_rxPin, _txPin);
   _serial = _softwareSerial;
   _softwareSerial->begin(9600);
@@ -30,12 +30,15 @@ void SNP_Sensor::begin(void)
 #endif // #if defined(__AVR__) || defined(__ESP8266__)
 
   _charTimeout = (10 * 2500000) / 9600;
-  _commTimeout = 10000;
+  _commTimeout = 50000;
 }
 
-uint32_t SNP_Sensor::readLight(void)
+float SNP_Sensor::readLight(void)
 {
   uint8_t buf[8] = {0x02, 0x04, 0x00, 0x00, 0x00, 0x02, 0x71, 0xf8};
+  while (_serial->read() != -1)
+  {
+  }
   if (_dePin != NO_DE_PIN)
     digitalWrite(_dePin, HIGH);
   _serial->write(buf, 8);
@@ -88,20 +91,22 @@ uint32_t SNP_Sensor::readLight(void)
   uint16_t crc = ((uint16_t)readBuf[8] << 8) | ((uint16_t)readBuf[7]);
   if (_crc16(readBuf, 7) != crc)
   {
+    // wrong crc
     return NAN;
   }
 
   // ID | FUNC | SIZE | MID-LOW | LOW | HIGH | MID-HIGH | CRC-LOW | CRC-HIGH
   // --> uint32_t lux : HIGH | MID-HIGH | MID-LOW | LOW
-  uint32_t lux = ((uint32_t)readBuf[5] << 24) | ((uint32_t)readBuf[6] << 16) |
-                 ((uint32_t)readBuf[3] << 8) | ((uint32_t)readBuf[4]);
+  uint32_t lux_raw = ((uint32_t)readBuf[5] << 24) | ((uint32_t)readBuf[6] << 16) |
+                     ((uint32_t)readBuf[3] << 8) | ((uint32_t)readBuf[4]);
 
   while (_serial->available())
   {
     _serial->read();
   }
 
-  return lux;
+  // lux_raw has 2 decimal points as the last 2 digit
+  return lux_raw / 100.0f;
 }
 
 float SNP_Sensor::readTemperature(void)
@@ -159,6 +164,7 @@ float SNP_Sensor::readTemperature(void)
   uint16_t crc = ((uint16_t)readBuf[8] << 8) | ((uint16_t)readBuf[7]);
   if (_crc16(readBuf, 7) != crc)
   {
+    // wrong crc
     return NAN;
   }
 
@@ -171,12 +177,16 @@ float SNP_Sensor::readTemperature(void)
     _serial->read();
   }
 
+  // temp_raw has a decimal point as the last digit
   return temp_raw / 10.0f;
 }
 
 float SNP_Sensor::readHumidity(void)
 {
   uint8_t buf[8] = {0x01, 0x04, 0x00, 0x01, 0x00, 0x02, 0x20, 0x0b};
+  while (_serial->read() != -1)
+  {
+  }
   if (_dePin != NO_DE_PIN)
     digitalWrite(_dePin, HIGH);
   _serial->write(buf, 8);
@@ -228,6 +238,7 @@ float SNP_Sensor::readHumidity(void)
   uint16_t crc = ((uint16_t)readBuf[8] << 8) | ((uint16_t)readBuf[7]);
   if (_crc16(readBuf, 7) != crc)
   {
+    // wrong crc
     return NAN;
   }
 
@@ -240,6 +251,7 @@ float SNP_Sensor::readHumidity(void)
     _serial->read();
   }
 
+  // humidity_raw has a decimal point as the last digit
   return humidity_raw / 10.0f;
 }
 
